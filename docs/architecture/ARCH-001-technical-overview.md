@@ -1,7 +1,7 @@
 # ARCH-001: Technical Architecture Overview
 
 ## Document Info
-- **Version**: 1.0
+- **Version**: 2.0
 - **Status**: Draft
 - **Last Updated**: 2024-12
 
@@ -25,7 +25,7 @@
 │  │                    React SPA (Vite)                          │    │
 │  │  - Mobile-first responsive UI                               │    │
 │  │  - Real-time call status via WebSocket                      │    │
-│  │  - Push notification handling                               │    │
+│  │  - Stripe Elements for payment                              │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────┬───────────────────────────────────────┘
                               │
@@ -35,35 +35,31 @@
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │                    Express.js Server                         │    │
 │  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐    │    │
-│  │  │   Auth    │ │   Calls   │ │  Webhooks │ │   Users   │    │    │
+│  │  │   Auth    │ │   Calls   │ │  Payment  │ │  Webhooks │    │    │
 │  │  │  Routes   │ │  Routes   │ │  Routes   │ │  Routes   │    │    │
 │  │  └───────────┘ └───────────┘ └───────────┘ └───────────┘    │    │
 │  │                                                              │    │
 │  │  ┌───────────────────────────────────────────────────────┐  │    │
 │  │  │              WebSocket Server (Socket.io)              │  │    │
-│  │  │  - Real-time call status updates                       │  │    │
-│  │  │  - Connection management per user                      │  │    │
 │  │  └───────────────────────────────────────────────────────┘  │    │
 │  └─────────────────────────────────────────────────────────────┘    │
-└────────────────┬──────────────────────────────────┬─────────────────┘
-                 │                                  │
-                 ▼                                  ▼
-┌────────────────────────────┐      ┌────────────────────────────────┐
-│      PostgreSQL (Neon)     │      │         Vapi.ai                │
-│  ┌──────────────────────┐  │      │  ┌──────────────────────────┐  │
-│  │  Users               │  │      │  │  Outbound Calls          │  │
-│  │  Calls               │  │      │  │  AI Assistants           │  │
-│  │  CallEvents          │  │      │  │  Phone Numbers           │  │
-│  │  Subscriptions       │  │      │  │  Transcription           │  │
-│  └──────────────────────┘  │      │  │  Call Transfer           │  │
-└────────────────────────────┘      │  └──────────────────────────┘  │
-                                    └────────────────────────────────┘
-                                                   │
-                                                   ▼
-                                    ┌────────────────────────────────┐
-                                    │         PSTN Network           │
-                                    │  (Actual phone calls)          │
-                                    └────────────────────────────────┘
+└───────┬─────────────────┬─────────────────┬─────────────────┬───────┘
+        │                 │                 │                 │
+        ▼                 ▼                 ▼                 ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│   PostgreSQL  │ │    Vapi.ai    │ │    Stripe     │ │    Twilio     │
+│    (Neon)     │ │               │ │               │ │     SMS       │
+│               │ │ - Outbound    │ │ - Payments    │ │               │
+│ - Users       │ │   calls       │ │ - Pre-auth    │ │ - Auth codes  │
+│ - Calls       │ │ - AI voice    │ │ - Capture     │ │ - Transfer    │
+│ - Payments    │ │ - Transfer    │ │               │ │   alerts      │
+└───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘
+                          │
+                          ▼
+                  ┌───────────────┐
+                  │  PSTN Network │
+                  │ (Phone calls) │
+                  └───────────────┘
 ```
 
 ## Technology Stack
@@ -73,37 +69,36 @@
 |-----------|------------|-----------|
 | Framework | React 18 | Ecosystem, hooks, concurrent features |
 | Build Tool | Vite | Fast dev server, optimized builds |
+| Language | TypeScript | Type safety |
 | Styling | Tailwind CSS | Utility-first, mobile responsive |
-| State | Zustand | Simple, lightweight state management |
-| Forms | React Hook Form + Zod | Type-safe form validation |
-| HTTP | TanStack Query | Caching, mutations, real-time sync |
-| WebSocket | Socket.io-client | Reliable real-time connection |
-| Notifications | Web Push API | Native push notifications |
-| Router | React Router v6 | Standard routing solution |
+| State | Zustand | Simple, lightweight |
+| HTTP | TanStack Query | Caching, mutations |
+| Forms | React Hook Form + Zod | Type-safe validation |
+| WebSocket | Socket.io-client | Real-time updates |
+| Payments | @stripe/react-stripe-js | Card input UI |
+| Router | React Router v6 | Routing |
 
 ### Backend
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
 | Runtime | Node.js 20 LTS | Stable, TypeScript support |
-| Framework | Express.js | Mature, flexible, well-documented |
-| Language | TypeScript 5 | Type safety, better DX |
-| Database | PostgreSQL 15 | Reliable, ACID, good hosting options |
-| ORM | Prisma | Type-safe queries, migrations |
-| Validation | Zod | Runtime validation, TypeScript inference |
-| WebSocket | Socket.io | Fallback handling, rooms |
-| Voice AI | @vapi-ai/server-sdk | Official Vapi integration |
-| Auth | Clerk | Managed auth, easy integration |
-| Jobs | BullMQ + Redis | Background job processing |
+| Framework | Express.js | Mature, flexible |
+| Language | TypeScript 5 | Type safety |
+| Database | PostgreSQL 15 | Reliable, ACID |
+| ORM | Prisma | Type-safe queries |
+| Validation | Zod | Runtime validation |
+| WebSocket | Socket.io | Rooms, reconnection |
+| Voice AI | @vapi-ai/server-sdk | Call handling |
+| Payments | stripe | Payment processing |
+| SMS | twilio | Auth codes, notifications |
 
 ### Infrastructure
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
-| Frontend Hosting | Vercel | Edge network, easy deploys |
-| Backend Hosting | Railway | Docker support, easy scaling |
-| Database | Neon | Serverless Postgres, branching |
-| Redis | Upstash | Serverless Redis for jobs |
+| Frontend Hosting | Vercel | Edge, easy deploys |
+| Backend Hosting | Railway | Docker, scaling |
+| Database | Neon | Serverless Postgres |
 | Monitoring | Sentry | Error tracking |
-| Analytics | PostHog | Product analytics |
 
 ## Database Schema
 
@@ -111,106 +106,136 @@
 // prisma/schema.prisma
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  clerkId       String   @unique
-  name          String?
-  phone         String?  // User's phone for transfers
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  phone               String   @unique        // Phone number (primary identifier)
+  phoneVerified       Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  calls         Call[]
-  subscription  Subscription?
-  settings      UserSettings?
+  // Stripe
+  stripeCustomerId    String?  @unique
+  hasValidPayment     Boolean  @default(false)
+
+  calls               Call[]
+  paymentMethods      PaymentMethod[]
+  verificationCodes   VerificationCode[]
 }
 
-model UserSettings {
+model VerificationCode {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  code        String                    // 6-digit code
+  expiresAt   DateTime
+  attempts    Int      @default(0)      // Rate limiting
+  used        Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, code])
+}
+
+model PaymentMethod {
   id                    String   @id @default(cuid())
-  userId                String   @unique
+  userId                String
   user                  User     @relation(fields: [userId], references: [id])
 
-  notifyViaPush         Boolean  @default(true)
-  notifyViaSms          Boolean  @default(false)
-  defaultTransferPhone  String?
-  aiIdentity            String   @default("assistant") // "assistant" | "user" | "custom"
-  customIdentity        String?
-}
+  stripePaymentMethodId String   @unique
+  brand                 String   // visa, mastercard, etc.
+  last4                 String
+  expMonth              Int
+  expYear               Int
+  isDefault             Boolean  @default(false)
 
-model Subscription {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id])
-
-  tier          String   @default("free") // free, pro, unlimited, business
-  callsUsed     Int      @default(0)
-  callsLimit    Int      @default(2)
-  periodStart   DateTime
-  periodEnd     DateTime
-  stripeId      String?
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt             DateTime @default(now())
 }
 
 model Call {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
 
   // Target
-  targetPhone     String
-  targetName      String?  // Optional friendly name
-  purpose         String   // Why user is calling
+  targetPhone       String
+  targetName        String?
+  purpose           String
 
   // Vapi
-  vapiCallId      String?  @unique
-  vapiAssistantId String?
+  vapiCallId        String?  @unique
+  vapiAssistantId   String?
 
   // Status
-  status          CallStatus @default(PENDING)
-  humanDetected   Boolean    @default(false)
-  transferStatus  TransferStatus?
+  status            CallStatus @default(PENDING)
+  callMode          CallMode?  // Standard hold or IVR callback
+  humanDetected     Boolean    @default(false)
+
+  // Transfer
+  transferAttempts  Int        @default(0)
+  transferStatus    TransferStatus?
 
   // Timing
-  scheduledFor    DateTime?
-  startedAt       DateTime?
-  humanDetectedAt DateTime?
-  transferredAt   DateTime?
-  endedAt         DateTime?
+  startedAt         DateTime?
+  holdStartedAt     DateTime?
+  humanDetectedAt   DateTime?
+  transferredAt     DateTime?
+  endedAt           DateTime?
+
+  // Wait time (from IVR)
+  estimatedWaitMinutes  Int?
+
+  // Payment
+  paymentIntentId   String?
+  billableMinutes   Int?
+  amountCharged     Int?      // cents
+  paymentStatus     PaymentStatus @default(PENDING)
 
   // Results
-  duration        Int?     // Total duration in seconds
-  holdDuration    Int?     // Time on hold in seconds
-  outcome         String?  // Success, failed, etc.
-  transcript      String?  // Full call transcript
-  summary         String?  // AI-generated summary
+  outcome           String?
+  transcript        String?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  events          CallEvent[]
+  events            CallEvent[]
+
+  @@index([userId, createdAt])
 }
 
 enum CallStatus {
-  PENDING      // Call not started
-  SCHEDULED    // Scheduled for later
-  DIALING      // Currently dialing
-  NAVIGATING   // Navigating IVR
-  ON_HOLD      // Waiting for human
-  HUMAN_READY  // Human detected, awaiting transfer
-  TRANSFERRING // Transfer in progress
-  TRANSFERRED  // Successfully transferred
-  COMPLETED    // Call ended after transfer
-  FAILED       // Call failed
-  CANCELLED    // User cancelled
+  PENDING           // Not started
+  DIALING           // Currently dialing
+  NAVIGATING        // In IVR menus
+  AWAITING_CALLBACK // Used IVR callback, waiting for callback
+  ON_HOLD           // Waiting for human
+  HUMAN_READY       // Human detected, initiating transfer
+  TRANSFERRING      // Transfer in progress
+  TRANSFERRED       // Successfully transferred to user
+  COMPLETED         // Call ended after transfer
+  FAILED            // Call failed
+  CANCELLED         // User cancelled
+}
+
+enum CallMode {
+  STANDARD          // AI waits on hold
+  IVR_CALLBACK      // AI used IVR's callback feature
 }
 
 enum TransferStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  TIMEOUT
-  FAILED
+  PENDING           // About to transfer
+  RINGING           // Calling user's phone
+  RETRYING          // User didn't answer, trying again
+  CONNECTED         // User answered
+  FAILED            // All attempts failed
+}
+
+enum PaymentStatus {
+  PENDING           // Auth not yet created
+  AUTHORIZED        // Funds held
+  CAPTURED          // Charged
+  FAILED            // Charge failed
+  REFUNDED          // Refunded
+  VOID              // Auth released
 }
 
 model CallEvent {
@@ -218,38 +243,50 @@ model CallEvent {
   callId    String
   call      Call     @relation(fields: [callId], references: [id])
 
-  type      String   // status_change, transcript, error, etc.
-  data      Json     // Event-specific data
+  type      String   // status_change, transcript, transfer_attempt, etc.
+  data      Json
 
   createdAt DateTime @default(now())
+
+  @@index([callId, createdAt])
 }
 ```
 
 ## API Design
 
-### REST Endpoints
+### Authentication Endpoints
 
 ```yaml
-# Authentication (handled by Clerk)
-POST   /api/auth/webhook          # Clerk webhook for user sync
+# Phone + SMS Auth
+POST   /api/auth/send-code       # Send SMS verification code
+POST   /api/auth/verify-code     # Verify code, create session
+GET    /api/auth/me              # Get current user
+POST   /api/auth/logout          # End session
+```
 
-# Users
-GET    /api/users/me              # Get current user
-PATCH  /api/users/me              # Update current user
-GET    /api/users/me/settings     # Get user settings
-PATCH  /api/users/me/settings     # Update user settings
+### Call Endpoints
 
-# Calls
-GET    /api/calls                 # List user's calls
-POST   /api/calls                 # Create new call
-GET    /api/calls/:id             # Get call details
-DELETE /api/calls/:id             # Cancel call
-POST   /api/calls/:id/transfer    # Accept transfer
-POST   /api/calls/:id/decline     # Decline transfer
-POST   /api/calls/:id/message     # Take message instead
+```yaml
+GET    /api/calls                # List user's calls
+POST   /api/calls                # Create and start call
+GET    /api/calls/:id            # Get call details
+DELETE /api/calls/:id            # Cancel call
+```
 
-# Vapi Webhooks
-POST   /api/webhooks/vapi         # Vapi call status webhook
+### Payment Endpoints
+
+```yaml
+POST   /api/payment/setup-intent      # Create SetupIntent for adding card
+GET    /api/payment/methods           # List saved payment methods
+DELETE /api/payment/methods/:id       # Remove payment method
+POST   /api/payment/methods/:id/default # Set default method
+```
+
+### Webhook Endpoints
+
+```yaml
+POST   /api/webhooks/vapi        # Vapi call events
+POST   /api/webhooks/stripe      # Stripe payment events
 ```
 
 ### WebSocket Events
@@ -266,61 +303,288 @@ interface ServerEvents {
   'call:status': {
     callId: string
     status: CallStatus
-    data?: Record<string, unknown>
+    data?: {
+      estimatedWaitMinutes?: number
+      holdDurationSeconds?: number
+      transferAttempt?: number
+    }
   }
   'call:human_detected': {
     callId: string
-    estimatedWait?: number
   }
-  'call:transcript': {
+  'call:transfer_started': {
     callId: string
-    text: string
-    speaker: 'ai' | 'human'
+    attempt: number
   }
-  'call:transfer_ready': {
+  'call:transfer_complete': {
     callId: string
-    expiresIn: number  // seconds to accept
+  }
+  'call:cost_update': {
+    callId: string
+    currentCostCents: number
   }
 }
 ```
 
-### Request/Response Examples
+## Call Flow: Standard Hold Mode
 
-#### Create Call
+```
+┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+│  User   │     │   API   │     │  Vapi   │     │ Target  │
+└────┬────┘     └────┬────┘     └────┬────┘     └────┬────┘
+     │               │               │               │
+     │ Create Call   │               │               │
+     ├──────────────►│               │               │
+     │               │ Pre-auth $5   │               │
+     │               ├───────────────────────────────┤ (Stripe)
+     │               │               │               │
+     │               │ Start Call    │               │
+     │               ├──────────────►│               │
+     │               │               │ Dial          │
+     │               │               ├──────────────►│
+     │               │               │               │
+     │               │ Webhook:      │ IVR answers   │
+     │               │◄──────────────┤◄──────────────┤
+     │ WS: NAVIGATING│               │               │
+     │◄──────────────┤               │               │
+     │               │               │ Navigate IVR  │
+     │               │               ├──────────────►│
+     │               │               │               │
+     │               │ Webhook:      │ On hold       │
+     │               │◄──────────────┤◄──────────────┤
+     │ WS: ON_HOLD   │               │               │
+     │◄──────────────┤               │               │
+     │               │               │               │
+     │   (waiting)   │               │   (holding)   │
+     │               │               │               │
+     │               │ Webhook:      │ Human answers │
+     │               │◄──────────────┤◄──────────────┤
+     │               │               │               │
+     │               │ Send SMS      │ "Please hold" │
+     │               ├───────────────┤──────────────►│
+     │ SMS received  │               │               │
+     │               │               │               │
+     │               │ WS: HUMAN     │ Transfer      │
+     │◄──────────────┤◄──────────────┤               │
+     │               │               │ Call user     │
+     │               │               ├───────────────┤
+     │ Phone rings   │               │               │
+     │◄──────────────┼───────────────┼───────────────┤
+     │               │               │               │
+     │ Answer        │               │               │
+     ├───────────────┼───────────────┼──────────────►│
+     │               │               │               │
+     │ Connected!    │               │ Transfer done │
+     ├───────────────┼───────────────┼──────────────►│
+     │               │               │               │
+     │ Hang up       │               │               │
+     ├───────────────┼───────────────┼──────────────►│
+     │               │               │               │
+     │               │ Webhook: end  │               │
+     │               │◄──────────────┤               │
+     │               │ Capture $X.XX │               │
+     │               ├───────────────────────────────┤ (Stripe)
+     │ WS: COMPLETED │               │               │
+     │◄──────────────┤               │               │
+```
+
+## Call Flow: IVR Callback Mode
+
+```
+┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+│  User   │     │   API   │     │  Vapi   │     │ Target  │
+└────┬────┘     └────┬────┘     └────┬────┘     └────┬────┘
+     │               │               │               │
+     │ Create Call   │               │               │
+     ├──────────────►│ Pre-auth $5   │               │
+     │               ├───────────────┤               │
+     │               │ Start Call    │               │
+     │               ├──────────────►│ Dial          │
+     │               │               ├──────────────►│
+     │               │               │               │
+     │ WS: NAVIGATING│               │ IVR: "Wait    │
+     │◄──────────────┤◄──────────────┤ time 20 min,  │
+     │               │               │ press 1 for   │
+     │               │               │ callback"     │
+     │               │               │               │
+     │               │ Detected      │ AI presses 1  │
+     │               │ callback      ├──────────────►│
+     │               │◄──────────────┤               │
+     │               │               │ Provides our  │
+     │ WS: AWAITING  │               │ phone number  │
+     │ _CALLBACK     │               ├──────────────►│
+     │◄──────────────┤               │               │
+     │               │               │ IVR: "You'll  │
+     │               │               │ receive call" │
+     │               │               │◄──────────────┤
+     │               │               │               │
+     │               │               │ Call ends     │
+     │               │◄──────────────┤               │
+     │               │               │               │
+     │   (waiting for callback)      │               │
+     │               │               │               │
+     │               │ Inbound call  │               │
+     │               │◄──────────────┼───────────────┤
+     │               │               │               │
+     │               │ Vapi answers  │               │
+     │               ├──────────────►│               │
+     │               │               │ Verify human  │
+     │               │               ├──────────────►│
+     │ WS: HUMAN     │               │               │
+     │◄──────────────┤◄──────────────┤               │
+     │               │ Send SMS      │               │
+     │               ├───────────────┤               │
+     │               │               │ Transfer      │
+     │ Phone rings   │               ├───────────────┤
+     │◄──────────────┼───────────────┼───────────────┤
+     │               │               │               │
+     │ Answer        │               │               │
+     ├───────────────┼───────────────┼──────────────►│
+     │ Connected!    │               │               │
+```
+
+## Transfer Retry Logic
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  HUMAN DETECTED                              │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+              ┌───────────────────────┐
+              │  Attempt = 1          │
+              │  Call user's phone    │
+              │  Send SMS: "Rep is    │
+              │  waiting!"            │
+              └───────────┬───────────┘
+                          │
+                          ▼
+              ┌───────────────────────┐
+              │  User answers?        │
+              └───────────┬───────────┘
+                    │           │
+                   YES          NO (15 sec timeout)
+                    │           │
+                    ▼           ▼
+           ┌────────────┐  ┌────────────────────┐
+           │ TRANSFER   │  │ Tell rep: "Still   │
+           │ COMPLETE   │  │ connecting..."     │
+           └────────────┘  └─────────┬──────────┘
+                                     │
+                                     ▼
+                          ┌───────────────────────┐
+                          │  Attempt < 3?         │
+                          └───────────┬───────────┘
+                                │           │
+                               YES          NO
+                                │           │
+                                ▼           ▼
+                    ┌────────────────┐  ┌────────────────┐
+                    │ Wait 30 sec    │  │ Offer to take  │
+                    │ Attempt++      │  │ message or     │
+                    │ Send SMS       │  │ schedule       │
+                    │ Try again      │  │ callback       │
+                    └───────┬────────┘  └────────────────┘
+                            │
+                            │ (loop back to "Call user's phone")
+```
+
+## Authentication Flow
+
+### Phone + SMS Auth
+
+```
+┌─────────┐     ┌─────────┐     ┌─────────┐
+│  User   │     │   API   │     │ Twilio  │
+└────┬────┘     └────┬────┘     └────┬────┘
+     │               │               │
+     │ Enter phone   │               │
+     ├──────────────►│               │
+     │               │ Generate code │
+     │               │ Store in DB   │
+     │               │               │
+     │               │ Send SMS      │
+     │               ├──────────────►│
+     │               │               │
+     │ SMS received  │               │
+     │◄──────────────┼───────────────┤
+     │               │               │
+     │ Enter code    │               │
+     ├──────────────►│               │
+     │               │ Verify code   │
+     │               │               │
+     │               │ Create/get    │
+     │               │ user          │
+     │               │               │
+     │               │ Generate JWT  │
+     │               │               │
+     │ JWT (cookie)  │               │
+     │◄──────────────┤               │
+     │               │               │
+     │ Authenticated │               │
+```
+
+### JWT Token Structure
+
 ```typescript
-// POST /api/calls
-// Request
-{
-  "targetPhone": "+14155551234",
-  "targetName": "Comcast Support",
-  "purpose": "Cancel my internet subscription",
-  "scheduledFor": null  // null = immediate
-}
-
-// Response
-{
-  "id": "call_abc123",
-  "status": "PENDING",
-  "targetPhone": "+14155551234",
-  "targetName": "Comcast Support",
-  "purpose": "Cancel my internet subscription",
-  "createdAt": "2024-12-20T10:30:00Z"
+interface JWTPayload {
+  sub: string          // User ID
+  phone: string        // Phone number
+  iat: number          // Issued at
+  exp: number          // Expires (7 days)
 }
 ```
 
-#### Call Status Update (WebSocket)
+### Session Management
+
+- JWT stored in httpOnly cookie
+- 7-day expiration
+- Refresh on each API request (sliding window)
+- Logout clears cookie
+
+## Payment Flow
+
+### Pre-Authorization
+
 ```typescript
-// Server -> Client
-{
-  "event": "call:status",
-  "data": {
-    "callId": "call_abc123",
-    "status": "ON_HOLD",
-    "data": {
-      "holdStartedAt": "2024-12-20T10:32:00Z",
-      "estimatedWait": 720  // 12 minutes
-    }
-  }
+// On call creation
+async function preAuthorize(userId: string, callId: string) {
+  const user = await getUser(userId);
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: 500, // $5.00 (100 minutes max)
+    currency: 'usd',
+    customer: user.stripeCustomerId,
+    payment_method: user.defaultPaymentMethodId,
+    capture_method: 'manual',
+    confirm: true,
+    metadata: { callId, userId }
+  });
+
+  await updateCall(callId, {
+    paymentIntentId: paymentIntent.id,
+    paymentStatus: 'AUTHORIZED'
+  });
+}
+```
+
+### Capture
+
+```typescript
+// On call end
+async function capturePayment(call: Call) {
+  const billableMinutes = calculateBillableMinutes(call);
+  const amountCents = Math.max(100, billableMinutes * 5); // $1 min, $0.05/min
+
+  await stripe.paymentIntents.capture(call.paymentIntentId, {
+    amount_to_capture: amountCents
+  });
+
+  await updateCall(call.id, {
+    billableMinutes,
+    amountCharged: amountCents,
+    paymentStatus: 'CAPTURED'
+  });
 }
 ```
 
@@ -330,130 +594,74 @@ interface ServerEvents {
 
 ```typescript
 const assistantConfig = {
-  name: "Secretary Assistant",
+  name: "CallMeBackWhen Assistant",
   model: {
     provider: "openai",
     model: "gpt-4-turbo",
     temperature: 0.7,
-    systemPrompt: `You are a personal assistant making a phone call on behalf of the user.
+    systemPrompt: `You are a personal assistant making a phone call on behalf of a user.
 
 Your task:
 1. Navigate any automated phone menus to reach a human representative
-2. When asked, state that you're calling about: {{purpose}}
-3. Wait on hold patiently
-4. When a human answers, politely inform them you're connecting them with {{userName}}
+2. When asked why you're calling, state: "{{purpose}}"
+3. Listen for callback options. If offered (e.g., "press 1 for callback"), take it and provide our callback number: {{callbackNumber}}
+4. If no callback offered, wait on hold patiently
+5. When a human representative answers:
+   - Say: "Hi, I'm connecting you with the person I'm calling for. One moment please."
+   - Trigger the transfer immediately
+6. If the user doesn't answer the transfer, say: "They're just finishing up, one moment" and try again
 
 Important:
-- Be polite and professional
-- If asked if you're an AI, say "I'm an assistant calling on behalf of {{userName}}"
+- If asked if you're an AI, say "I'm an assistant calling on behalf of someone"
 - Never hang up unless instructed
-- Report any issues immediately`
+- Stay calm and polite at all times
+- Report any issues or disconnects`
   },
   voice: {
     provider: "11labs",
-    voiceId: "rachel"  // Professional female voice
+    voiceId: "rachel"
   },
   tools: [
     {
       type: "transferCall",
-      destinations: [
-        {
-          type: "number",
-          number: "{{userPhone}}"
-        }
-      ],
-      messages: [
-        {
-          type: "request-start",
-          content: "I'm connecting you with {{userName}} now."
-        }
-      ]
+      destinations: [{
+        type: "number",
+        number: "{{userPhone}}"
+      }]
     }
   ]
-}
+};
 ```
 
-### Webhook Handling
+### Webhook Events
 
-```typescript
-// POST /api/webhooks/vapi
-async function handleVapiWebhook(req: Request) {
-  const { type, call } = req.body;
+| Vapi Event | Our Action |
+|------------|------------|
+| `call-started` | Update status → DIALING |
+| `speech-update` | Analyze for human detection |
+| `transcript` | Store, detect wait time |
+| `tool-calls` | Handle transfer initiation |
+| `transfer-started` | Update status → TRANSFERRING |
+| `transfer-completed` | Update status → TRANSFERRED |
+| `call-ended` | Calculate cost, capture payment |
 
-  switch (type) {
-    case 'call-started':
-      await updateCallStatus(call.id, 'DIALING');
-      break;
-
-    case 'speech-update':
-      // Analyze for human detection
-      if (await detectHuman(call.transcript)) {
-        await updateCallStatus(call.id, 'HUMAN_READY');
-        await notifyUser(call.userId);
-      }
-      break;
-
-    case 'call-ended':
-      await updateCallStatus(call.id, 'COMPLETED');
-      await saveTranscript(call.id, call.transcript);
-      break;
-
-    case 'transfer-started':
-      await updateCallStatus(call.id, 'TRANSFERRING');
-      break;
-
-    case 'transfer-completed':
-      await updateCallStatus(call.id, 'TRANSFERRED');
-      break;
-  }
-}
-```
-
-### Human Detection Strategy
-
-```typescript
-interface HumanDetectionSignals {
-  // Speech patterns
-  usedUserName: boolean;        // Said the user's name
-  askedQuestion: boolean;       // Asked a question
-  personalizedGreeting: boolean; // "Hi, this is John from..."
-
-  // Timing patterns
-  responseLatency: number;      // Humans respond slower than IVR
-  pausePatterns: boolean;       // Natural pauses
-
-  // Content patterns
-  noMenuOptions: boolean;       // No "press 1 for..."
-  acknowledgement: boolean;     // "I can help you with that"
-}
-
-function analyzeForHuman(transcript: string): HumanDetectionSignals {
-  // Implement detection logic
-  // Return confidence score
-}
-```
-
-## Security Considerations
+## Security
 
 ### Authentication
-- All API endpoints require valid Clerk JWT
+- All API endpoints require valid JWT (except auth endpoints)
 - WebSocket connections authenticated via token
-- Webhook endpoints validate Vapi signature
-
-### Data Protection
-- Phone numbers encrypted at rest
-- Transcripts stored encrypted
-- PII redaction for analytics
+- Webhook endpoints verify signatures (Vapi, Stripe)
 
 ### Rate Limiting
-- 100 API requests per minute per user
-- 5 concurrent calls per user (paid tiers)
-- Webhook rate limiting by IP
+- SMS send: 3 per phone per 10 minutes
+- Auth attempts: 5 per phone per hour
+- API requests: 100 per user per minute
+- Calls: 5 concurrent per user
 
-### Call Recording Compliance
-- Two-party consent states: Recording disabled or user notified
-- All recordings stored encrypted
-- Retention policy: 30 days (configurable)
+### Data Protection
+- Phone numbers stored in plain text (not PCI sensitive)
+- Payment methods: only Stripe IDs stored, never card numbers
+- Transcripts: stored encrypted at rest
 
 ## Error Handling
 
@@ -468,77 +676,23 @@ const retryConfig = {
 ```
 
 ### Error Categories
-1. **Transient**: Network issues, timeouts → Retry with backoff
-2. **Client**: Invalid input, auth failure → Return error to client
-3. **External**: Vapi errors, phone network → Log, notify, mark call failed
-4. **Internal**: Bugs, unexpected state → Log, alert, graceful degradation
+1. **Transient**: Network issues → Retry with backoff
+2. **Client**: Invalid input → Return 400 error
+3. **Payment**: Card declined → Block calls, notify user
+4. **External**: Vapi down → Log, fail gracefully
+5. **Internal**: Bugs → Log to Sentry, 500 error
 
-## Monitoring & Observability
+## Monitoring
 
 ### Key Metrics
 - Call success rate
-- Human detection accuracy
 - Transfer success rate
-- Average hold time
+- Human detection accuracy
+- Payment capture rate
 - API latency (p50, p95, p99)
-- WebSocket connection count
 
-### Alerting
+### Alerts
 - Call success rate < 80%
+- Payment failure rate > 5%
 - API error rate > 5%
 - P99 latency > 2s
-- WebSocket disconnection spike
-
-### Logging
-- Structured JSON logs
-- Request/response logging (sanitized)
-- Call state machine transitions
-- Vapi webhook payloads
-
-## Deployment
-
-### Environments
-- **Development**: Local Docker Compose
-- **Staging**: Railway preview deployments
-- **Production**: Railway + Vercel
-
-### CI/CD Pipeline
-```yaml
-# GitHub Actions
-on:
-  push:
-    branches: [main]
-
-jobs:
-  test:
-    - Run unit tests
-    - Run integration tests
-    - Type checking
-
-  deploy-staging:
-    - Deploy to Railway preview
-    - Deploy to Vercel preview
-    - Run E2E tests
-
-  deploy-production:
-    - Deploy to Railway (production)
-    - Deploy to Vercel (production)
-    - Smoke tests
-```
-
-## Future Considerations
-
-### Scaling
-- Horizontal API scaling with load balancer
-- Redis cluster for WebSocket coordination
-- Database read replicas
-
-### Multi-region
-- Edge functions for latency
-- Regional phone numbers
-- Data residency compliance
-
-### Native Apps
-- React Native for iOS/Android
-- Push notification tokens
-- Background call monitoring
