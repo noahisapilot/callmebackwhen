@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  clerkId   String   @unique
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  calls        Call[]
+  subscription Subscription?
+  settings     UserSettings?
+}
+
+model UserSettings {
+  id                   String  @id @default(cuid())
+  userId               String  @unique
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifyViaPush        Boolean @default(true)
+  notifyViaSms         Boolean @default(false)
+  defaultTransferPhone String?
+  aiIdentity           String  @default("assistant")
+  customIdentity       String?
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier        String   @default("free")
+  callsUsed   Int      @default(0)
+  callsLimit  Int      @default(2)
+  periodStart DateTime
+  periodEnd   DateTime
+  stripeId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Call {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetPhone     String
+  targetName      String?
+  purpose         String
+  vapiCallId      String?         @unique
+  vapiAssistantId String?
+  status          CallStatus      @default(PENDING)
+  humanDetected   Boolean         @default(false)
+  transferStatus  TransferStatus?
+  scheduledFor    DateTime?
+  startedAt       DateTime?
+  humanDetectedAt DateTime?
+  transferredAt   DateTime?
+  endedAt         DateTime?
+  duration        Int?
+  holdDuration    Int?
+  outcome         String?
+  transcript      String?
+  summary         String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  events CallEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum CallStatus {
+  PENDING
+  SCHEDULED
+  DIALING
+  NAVIGATING
+  ON_HOLD
+  HUMAN_READY
+  TRANSFERRING
+  TRANSFERRED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum TransferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TIMEOUT
+  FAILED
+}
+
+model CallEvent {
+  id        String   @id @default(cuid())
+  callId    String
+  call      Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+  type      String
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@index([callId])
+  @@index([createdAt])
+}
