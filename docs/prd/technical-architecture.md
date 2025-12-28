@@ -18,6 +18,7 @@ Call Me Back When is built as a serverless, event-driven application on AWS with
 - **Language**: TypeScript
 - **API**: REST via API Gateway (consider tRPC for type safety)
 - **Database**: PostgreSQL via Aurora Serverless v2
+- **ORM**: TypeORM (entities, migrations, type-safe queries)
 - **Lambda Utilities**: AWS Lambda Powertools for TypeScript (logging, tracing, metrics)
 
 ### External Services
@@ -403,23 +404,47 @@ app.get('/calls/:id/stream', (req, res) => {
 # Prerequisites
 node >= 20
 pnpm (preferred) or npm
-docker (for local PostgreSQL)
+docker (for LocalStack + PostgreSQL)
+aws-cdk-local (cdklocal) for deploying to LocalStack
 
 # Environment variables
 cp .env.example .env.local
-# Fill in: VAPI_API_KEY, STRIPE_*, TWILIO_*, DATABASE_URL
+# Fill in: VAPI_API_KEY, TWILIO_*, DATABASE_URL
 
-# Start local database
-docker-compose up -d postgres
+# Start LocalStack + PostgreSQL
+docker-compose up -d
 
 # Install dependencies
 pnpm install
 
-# Run migrations
+# Deploy infrastructure to LocalStack
+cdklocal deploy
+
+# Run database migrations
 pnpm db:migrate
 
 # Start development server
 pnpm dev
+```
+
+### LocalStack Services
+Local development uses LocalStack to emulate AWS services:
+- **API Gateway**: HTTP API endpoints
+- **Lambda**: Function execution
+- **S3**: Static asset hosting (frontend)
+- **Secrets Manager**: API keys and secrets
+- **CloudWatch**: Logs (viewable via LocalStack dashboard)
+
+PostgreSQL runs as a separate Docker container (LocalStack's RDS emulation is limited).
+
+### CDK Deployment
+```bash
+# Local (LocalStack)
+cdklocal deploy --all
+
+# AWS Staging/Production
+cdk deploy --all --context env=staging
+cdk deploy --all --context env=production
 ```
 
 ### Testing Strategy

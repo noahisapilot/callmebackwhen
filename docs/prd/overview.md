@@ -165,23 +165,27 @@ The AI system handles calls with three possible outcomes:
 
 ### Phase 1: Foundation (Current)
 - PRD and technical documentation
-- Project setup and infrastructure
-- Core authentication flow
+- Project setup and infrastructure (monorepo, TypeORM, LocalStack)
+- Core authentication flow (phone OTP → JWT)
+- Dashboard stub (no payment required yet)
 
 ### Phase 2: Core Functionality
 - Vapi integration
 - Basic call flow (dial, wait, transfer)
-- Simple dashboard
+- Live call dashboard with real-time updates
+- Call history page
 
-### Phase 3: Intelligence
+### Phase 3: Payments & Intelligence
+- Payment integration (Stripe, pre-funded balance)
 - IVR navigation
 - Callback detection
 - Autonomous resolution attempts
 
 ### Phase 4: Polish & Launch
-- Payment integration
-- Call history and recordings
+- Call recordings and transcripts storage
+- Post-call analytics and feedback
 - Beta testing
+- Performance optimization
 - Public launch
 
 ## Appendix
