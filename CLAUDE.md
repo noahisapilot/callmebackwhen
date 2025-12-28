@@ -15,11 +15,12 @@
 |-------|------------|
 | Frontend | Next.js 14+ (App Router), TypeScript, Tailwind CSS |
 | Backend | Node.js 20+, TypeScript, AWS Lambda, Lambda Powertools |
-| Database | PostgreSQL (Aurora Serverless v2) |
+| Database | PostgreSQL (Aurora Serverless v2), TypeORM |
 | Voice AI | Vapi.ai (@vapi-ai/server-sdk) |
-| Payments | Stripe |
+| Payments | Stripe (Phase 3) |
 | SMS/OTP | Twilio |
 | Infrastructure | AWS (CDK, Lambda, API Gateway, S3 + CloudFront) |
+| Local Dev | LocalStack, Docker, cdklocal |
 
 ## Project Structure
 
@@ -51,15 +52,20 @@ pnpm install
 pnpm add <package>           # Add a dependency
 pnpm add -D <package>        # Add a dev dependency
 
-# Development
-pnpm dev                     # Start all services
-pnpm dev:web                 # Start frontend only
-pnpm dev:api                 # Start API locally (serverless-offline)
+# Local Environment (LocalStack + PostgreSQL)
+docker-compose up -d         # Start LocalStack + PostgreSQL
+docker-compose down          # Stop all containers
+cdklocal deploy --all        # Deploy CDK stack to LocalStack
 
-# Database
+# Development
+pnpm dev                     # Start all services (frontend + watch mode)
+pnpm dev:web                 # Start frontend only
+pnpm dev:api                 # Start API locally (hot reload)
+
+# Database (TypeORM)
 pnpm db:migrate              # Run migrations
-pnpm db:generate             # Generate migration from schema changes
-pnpm db:studio               # Open Prisma Studio (if using Prisma)
+pnpm db:migrate:generate     # Generate migration from entity changes
+pnpm db:migrate:revert       # Revert last migration
 
 # Testing
 pnpm test                    # Run all tests
@@ -73,8 +79,8 @@ pnpm format                  # Prettier
 
 # Build & Deploy
 pnpm build                   # Build all packages
-pnpm deploy:staging          # Deploy to staging
-pnpm deploy:prod             # Deploy to production
+cdk deploy --context env=staging   # Deploy to AWS staging
+cdk deploy --context env=prod      # Deploy to AWS production
 ```
 
 ## Key Development Principles
@@ -114,24 +120,32 @@ Always use `pnpm add` or `pnpm add -D` to install packages. This ensures:
 
 ```bash
 # .env.local (frontend)
-NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:4566/restapis/<api-id>/local/_user_request_
 
 # .env (backend)
-DATABASE_URL=postgresql://...
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/callmebackwhen
 VAPI_API_KEY=sk-...
 VAPI_WEBHOOK_SECRET=whsec-...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
 TWILIO_ACCOUNT_SID=AC...
 TWILIO_AUTH_TOKEN=...
 TWILIO_PHONE_NUMBER=+1...
 JWT_SECRET=...
+
+# LocalStack
+LOCALSTACK_ENDPOINT=http://localhost:4566
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+AWS_REGION=us-east-1
+
+# Phase 3 (Stripe - not needed yet)
+# STRIPE_SECRET_KEY=sk_test_...
+# STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 ### Getting API Keys
 - **Vapi**: https://dashboard.vapi.ai (sign up for free tier)
-- **Stripe**: https://dashboard.stripe.com/test/apikeys
 - **Twilio**: https://console.twilio.com (get trial number)
+- **Stripe**: https://dashboard.stripe.com/test/apikeys (Phase 3)
 
 ## AWS Lambda Powertools
 
@@ -194,7 +208,7 @@ const call = await vapi.calls.create({
 - `function-call`: Handle custom functions (REQUEST_INFO, TRANSFER, etc.)
 - `call-ended`: Finalize call, calculate cost, store recording URL
 
-## Database Conventions
+## Database Conventions (TypeORM)
 
 ### Naming
 - Tables: `snake_case`, plural (e.g., `call_events`)
@@ -203,10 +217,16 @@ const call = await vapi.calls.create({
 - Foreign keys: `<table>_id` (e.g., `user_id`)
 - Timestamps: `created_at`, `updated_at`
 
+### Entities
+- Located in `packages/db/entities/`
+- Use decorators: `@Entity()`, `@Column()`, `@PrimaryGeneratedColumn()`
+- Relations: `@OneToMany()`, `@ManyToOne()`, `@JoinColumn()`
+
 ### Migrations
-- One migration per logical change
-- Descriptive names: `20240115_add_callback_requested_to_calls.sql`
-- Always include down migration
+- Generated from entity changes: `pnpm db:migrate:generate`
+- Descriptive names: `1705312345678-AddCallbackRequestedToCalls.ts`
+- Review generated SQL before applying
+- Always include up and down methods
 
 ## Testing Strategy
 
@@ -242,13 +262,13 @@ const call = await vapi.calls.create({
 3. Fetch data with React Query
 4. Handle loading, error, and empty states
 
-### Modifying Database Schema
+### Modifying Database Schema (TypeORM)
 
-1. Update schema in `packages/db/schema/`
-2. Generate migration: `pnpm db:generate`
-3. Review generated SQL
+1. Update entity in `packages/db/entities/`
+2. Generate migration: `pnpm db:migrate:generate MigrationName`
+3. Review generated migration in `packages/db/migrations/`
 4. Apply: `pnpm db:migrate`
-5. Update TypeScript types if not auto-generated
+5. TypeScript types are automatically updated from entities
 
 ## Error Handling
 
@@ -308,19 +328,30 @@ export const handler = withErrorHandling(async (event) => {
 
 ### Common Issues
 
+**LocalStack not starting**
+- Ensure Docker is running
+- Check port 4566 is not in use
+- Try `docker-compose down && docker-compose up -d`
+
+**CDK deployment to LocalStack failing**
+- Ensure `aws-cdk-local` is installed globally: `npm install -g aws-cdk-local`
+- Check LOCALSTACK_ENDPOINT is set correctly
+- Verify LocalStack is running: `curl http://localhost:4566/_localstack/health`
+
 **Vapi webhook not receiving events**
 - Check VAPI_WEBHOOK_SECRET matches dashboard
-- Verify serverUrl is publicly accessible
+- Verify serverUrl is publicly accessible (use ngrok for local dev)
 - Check Lambda logs for errors
-
-**Stripe payments failing in dev**
-- Use Stripe test card: 4242 4242 4242 4242
-- Check STRIPE_WEBHOOK_SECRET is set
 
 **SMS not sending**
 - Verify Twilio credentials
 - Check phone number is E.164 format (+1...)
 - Trial accounts can only send to verified numbers
+
+**Database connection issues**
+- Ensure PostgreSQL container is running: `docker-compose ps`
+- Check DATABASE_URL is correct
+- Verify database exists: `docker-compose exec postgres psql -U postgres -l`
 
 ## Architecture Decisions
 
@@ -345,6 +376,18 @@ export const handler = withErrorHandling(async (event) => {
 - Lower cost at scale
 - Static export works well for SPA with API backend
 - No need for SSR/Server Components (data fetched via React Query)
+
+### Why TypeORM?
+- Decorator-based entities familiar to many developers
+- Mature ecosystem with good documentation
+- Supports migrations with up/down methods
+- Works well with PostgreSQL and TypeScript
+
+### Why LocalStack for Local Dev?
+- Emulates AWS services locally (Lambda, API Gateway, S3, Secrets Manager)
+- CDK deployments work via cdklocal
+- Faster iteration than deploying to real AWS
+- Free for local development
 
 ## Contact
 

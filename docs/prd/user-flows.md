@@ -36,45 +36,24 @@ This document details the key user journeys through the Call Me Back When applic
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    ADD INITIAL FUNDS                         │
-│  Add funds to get started                                   │
-│                                                              │
-│  [$5]  [$10]  [$25]                                        │
-│                                                              │
-│  ~100 minutes of hold time                                  │
-│                                                              │
-│  [Add $5 →]                                                 │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    STRIPE CHECKOUT                           │
-│  (Stripe Elements embedded)                                 │
-│                                                              │
-│  Card: [________________]                                   │
-│  Exp:  [__/__]  CVC: [___]                                 │
-│                                                              │
-│  [Pay $5.00]                                                │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
 │                      DASHBOARD                               │
-│  Balance: $5.00 (~100 min)                                  │
+│  Welcome! You're all set.                                   │
 │                                                              │
 │  [Make Your First Call]                                     │
+│                                                              │
+│  (Payment required before making calls - see Flow 7)        │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+*Note: Payment integration is Phase 3. In Phase 1-2, users can authenticate and see the dashboard but won't be charged.*
 
 ### Error States
 - **Invalid phone number**: "Please enter a valid US phone number"
 - **OTP expired**: "Code expired. [Send new code]"
 - **OTP incorrect**: "Incorrect code. X attempts remaining."
-- **Payment failed**: "Payment failed. Please try again or use a different card."
 
 ### Edge Cases
 - User closes browser during OTP: Session persists, can resume
-- User abandons at payment: Can complete payment later from dashboard
 - User already has account: Redirect to login flow
 
 ---
@@ -379,12 +358,14 @@ Cost: $0.19 | Balance: $4.81
 
 ---
 
-## Flow 7: Add Funds
+## Flow 7: Add Funds (Phase 3)
+
+*This flow is implemented in Phase 3 when payment integration is added.*
 
 ### Trigger Points
-- Initial onboarding (required)
 - Balance runs low during call attempt
 - Proactive top-up from settings
+- First call attempt (requires minimum balance)
 
 ### Steps
 
