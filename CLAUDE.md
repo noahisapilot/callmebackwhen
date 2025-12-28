@@ -14,12 +14,12 @@
 | Layer | Technology |
 |-------|------------|
 | Frontend | Next.js 14+ (App Router), TypeScript, Tailwind CSS |
-| Backend | Node.js 20+, TypeScript, AWS Lambda |
+| Backend | Node.js 20+, TypeScript, AWS Lambda, Lambda Powertools |
 | Database | PostgreSQL (Aurora Serverless v2) |
 | Voice AI | Vapi.ai (@vapi-ai/server-sdk) |
 | Payments | Stripe |
 | SMS/OTP | Twilio |
-| Infrastructure | AWS (CDK), Vercel (frontend) |
+| Infrastructure | AWS (CDK, Lambda, API Gateway, S3 + CloudFront) |
 
 ## Project Structure
 
@@ -132,6 +132,39 @@ JWT_SECRET=...
 - **Vapi**: https://dashboard.vapi.ai (sign up for free tier)
 - **Stripe**: https://dashboard.stripe.com/test/apikeys
 - **Twilio**: https://console.twilio.com (get trial number)
+
+## AWS Lambda Powertools
+
+We use [AWS Lambda Powertools for TypeScript](https://docs.powertools.aws.dev/lambda/typescript/latest/) for structured logging, tracing, and metrics in all Lambda functions.
+
+**LLM Documentation**: https://docs.aws.amazon.com/powertools/typescript/latest/llms-full.txt
+
+### Core Utilities
+- **Logger**: Structured JSON logs with Lambda context, cold start detection
+- **Tracer**: AWS X-Ray integration for distributed tracing
+- **Metrics**: Custom CloudWatch metrics
+
+### Installation
+```bash
+pnpm add @aws-lambda-powertools/logger @aws-lambda-powertools/tracer @aws-lambda-powertools/metrics
+```
+
+### Usage Example
+```typescript
+import { Logger } from '@aws-lambda-powertools/logger';
+import { Tracer } from '@aws-lambda-powertools/tracer';
+import { Metrics, MetricUnit } from '@aws-lambda-powertools/metrics';
+
+const logger = new Logger({ serviceName: 'call-handler' });
+const tracer = new Tracer({ serviceName: 'call-handler' });
+const metrics = new Metrics({ serviceName: 'call-handler' });
+
+export const handler = async (event: APIGatewayEvent) => {
+  logger.info('Processing call request', { callId: event.pathParameters?.id });
+  metrics.addMetric('CallsProcessed', MetricUnit.Count, 1);
+  // ... handler logic
+};
+```
 
 ## Vapi Integration
 
@@ -306,6 +339,12 @@ export const handler = withErrorHandling(async (event) => {
 - Avoids per-transaction CC fees
 - Better for small dollar amounts
 - Creates slight user commitment
+
+### Why S3 + CloudFront vs Vercel?
+- Single cloud provider (all AWS)
+- Lower cost at scale
+- Static export works well for SPA with API backend
+- No need for SSR/Server Components (data fetched via React Query)
 
 ## Contact
 

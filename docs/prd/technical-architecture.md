@@ -18,12 +18,17 @@ Call Me Back When is built as a serverless, event-driven application on AWS with
 - **Language**: TypeScript
 - **API**: REST via API Gateway (consider tRPC for type safety)
 - **Database**: PostgreSQL via Aurora Serverless v2
+- **Lambda Utilities**: AWS Lambda Powertools for TypeScript (logging, tracing, metrics)
 
 ### External Services
 - **Voice AI**: Vapi.ai (@vapi-ai/server-sdk)
 - **Payments**: Stripe
 - **SMS**: Twilio (for OTP and user notifications)
-- **Hosting**: Vercel (frontend) or AWS Amplify
+
+### Frontend Hosting
+- **S3 + CloudFront**: Static export of Next.js (client-side rendering)
+- Next.js configured with `output: 'export'` for static HTML/JS/CSS
+- CloudFront CDN for global distribution and caching
 
 ### Infrastructure
 - **Cloud**: AWS
@@ -35,7 +40,7 @@ Call Me Back When is built as a serverless, event-driven application on AWS with
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                              FRONTEND                                    │
-│                         (Next.js on Vercel)                             │
+│                    (Next.js Static Export on S3 + CloudFront)           │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
 │  │   Landing   │  │  Dashboard  │  │ Call Status │  │   History   │   │
 │  │    Page     │  │    Home     │  │    Live     │  │    View     │   │
@@ -382,8 +387,8 @@ app.get('/calls/:id/stream', (req, res) => {
 | Lambda | <$10 |
 | API Gateway | <$10 |
 | Twilio SMS | ~$20 |
-| Vercel | Free tier |
-| **Total** | ~$550 |
+| S3 + CloudFront | <$5 |
+| **Total** | ~$555 |
 
 ### Revenue at 1,000 calls
 - 15,000 minutes @ $0.05 = $750
