@@ -5,7 +5,7 @@ import { MoreThanOrEqual } from 'typeorm';
 import { withErrorHandling } from '../../middleware/withErrorHandling.js';
 import { success, corsPreflightResponse } from '../../lib/response.js';
 import { generateOtpCode, getOtpExpiryDate } from '../../lib/otp.js';
-import { sendOtpSms } from '../../lib/twilio.js';
+import { sendOtpSms, isDevMode } from '../../lib/twilio.js';
 import { logger } from '../../lib/logger.js';
 import { AppError } from '../../lib/errors.js';
 
@@ -62,10 +62,17 @@ async function handler(
 
   logger.info('OTP sent successfully', { phoneNumber: phoneNumber.slice(-4) });
 
-  return success({
+  // In dev mode, return the code for easier testing
+  const response: { success: boolean; expiresIn: number; devCode?: string } = {
     success: true,
     expiresIn: OTP_CONFIG.EXPIRES_IN_SECONDS,
-  });
+  };
+
+  if (isDevMode()) {
+    response.devCode = code;
+  }
+
+  return success(response);
 }
 
 export const main = withErrorHandling(handler);

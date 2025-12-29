@@ -8,8 +8,13 @@ const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 // Create client only if credentials are available
 const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
 
+// Check if we're in dev mode (no Twilio configured)
+export function isDevMode(): boolean {
+  return !client || !fromNumber;
+}
+
 export async function sendOtpSms(phoneNumber: string, code: string): Promise<boolean> {
-  if (!client || !fromNumber) {
+  if (isDevMode()) {
     // In development without Twilio, just log the code
     logger.warn('Twilio not configured, logging OTP code', { phoneNumber, code });
     console.log(`\n📱 OTP Code for ${phoneNumber}: ${code}\n`);
