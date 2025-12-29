@@ -58,9 +58,10 @@ else
     echo -e "${GREEN}LocalStack is already running${NC}"
 fi
 
-# 7. Deploy to LocalStack
+# 7. Bootstrap and deploy to LocalStack
 echo -e "${YELLOW}🚀 Deploying to LocalStack...${NC}"
 cd infra
+cdklocal bootstrap
 cdklocal deploy --all --require-approval never
 cd ..
 
