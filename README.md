@@ -28,7 +28,7 @@ Edit `.env` with your values (Twilio is optional for local dev - OTP codes will 
 ### 3. Start PostgreSQL
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 4. Build Packages
@@ -139,8 +139,8 @@ localstack start   # Start it
 
 ### Database connection issues
 ```bash
-docker-compose ps              # Check if PostgreSQL is running
-docker-compose logs postgres   # View logs
+docker compose ps              # Check if PostgreSQL is running
+docker compose logs postgres   # View logs
 ```
 
 ### OTP not sending

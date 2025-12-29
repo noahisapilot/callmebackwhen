@@ -23,7 +23,7 @@ export class ApiStack extends cdk.Stack {
     const lambdaEnvironment = {
       NODE_OPTIONS: '--enable-source-maps',
       LOG_LEVEL: isLocal ? 'DEBUG' : 'INFO',
-      DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@host.docker.internal:5432/callmebackwhen',
+      DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@host.docker.internal:5433/callmebackwhen',
       JWT_SECRET: process.env.JWT_SECRET ?? 'dev-secret-change-in-production',
       TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID ?? '',
       TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN ?? '',
