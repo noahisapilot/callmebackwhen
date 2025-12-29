@@ -1,0 +1,58 @@
+// Error codes
+export const ErrorCodes = {
+  // Auth errors
+  INVALID_PHONE_NUMBER: 'INVALID_PHONE_NUMBER',
+  OTP_EXPIRED: 'OTP_EXPIRED',
+  OTP_INVALID: 'OTP_INVALID',
+  OTP_RATE_LIMITED: 'OTP_RATE_LIMITED',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  TOKEN_INVALID: 'TOKEN_INVALID',
+
+  // User errors
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+
+  // Call errors (Phase 2)
+  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+  CALL_NOT_FOUND: 'CALL_NOT_FOUND',
+  CALL_ALREADY_ACTIVE: 'CALL_ALREADY_ACTIVE',
+
+  // Payment errors (Phase 3)
+  PAYMENT_FAILED: 'PAYMENT_FAILED',
+  INVALID_AMOUNT: 'INVALID_AMOUNT',
+
+  // General errors
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+} as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+
+// OTP configuration
+export const OTP_CONFIG = {
+  LENGTH: 6,
+  EXPIRES_IN_SECONDS: 300, // 5 minutes
+  MAX_ATTEMPTS_PER_HOUR: 5,
+  RESEND_COOLDOWN_SECONDS: 30,
+} as const;
+
+// JWT configuration
+export const JWT_CONFIG = {
+  EXPIRES_IN: '7d',
+  ALGORITHM: 'HS256' as const,
+} as const;
+
+// Rate limiting
+export const RATE_LIMITS = {
+  OTP_PER_PHONE_PER_HOUR: 5,
+  API_REQUESTS_PER_USER_PER_MINUTE: 100,
+  CALLS_PER_USER_PER_HOUR: 10,
+} as const;
+
+// Pricing (cents)
+export const PRICING = {
+  COST_PER_MINUTE_CENTS: 5, // $0.05 per minute
+  MIN_BALANCE_FOR_CALL_CENTS: 100, // $1.00 minimum
+  TOPUP_AMOUNTS_CENTS: [500, 1000, 2500] as const, // $5, $10, $25
+} as const;
