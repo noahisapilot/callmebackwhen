@@ -7,9 +7,37 @@ Never wait on hold again. Our AI handles the call for you.
 ### Prerequisites
 
 - Node.js 20+
-- pnpm 8+
-- Docker (for PostgreSQL)
+- pnpm 8+ (`npm install -g pnpm`)
+- Docker
 - LocalStack CLI (`pip install localstack`)
+- cdklocal (`npm install -g aws-cdk-local aws-cdk`)
+
+### Setup
+
+```bash
+./setup.sh
+```
+
+This will:
+- Install dependencies
+- Create `.env` from template
+- Start PostgreSQL
+- Build all packages
+- Run database migrations
+- Start LocalStack and deploy the API
+
+Then start the frontend:
+
+```bash
+pnpm dev:web
+```
+
+Visit http://localhost:3000
+
+---
+
+<details>
+<summary>Manual Setup (if you prefer step-by-step)</summary>
 
 ### 1. Install Dependencies
 
@@ -22,8 +50,6 @@ pnpm install
 ```bash
 cp .env.example .env
 ```
-
-Edit `.env` with your values (Twilio is optional for local dev - OTP codes will be logged to console).
 
 ### 3. Start PostgreSQL
 
@@ -46,70 +72,47 @@ pnpm db:migrate
 ### 6. Start LocalStack
 
 ```bash
-localstack start
+localstack start -d
 ```
 
 ### 7. Deploy to LocalStack
 
 ```bash
-cdklocal deploy --all
+cd infra
+cdklocal deploy --all --require-approval never
 ```
 
-Note the API URL from the output (something like `http://localhost:4566/restapis/xxx/local/_user_request_`).
-
-### 8. Update Frontend API URL
-
-Edit `apps/web/.env.local`:
-
-```bash
-NEXT_PUBLIC_API_URL=<your-api-url-from-step-7>
-```
-
-### 9. Start Frontend
+### 8. Start Frontend
 
 ```bash
 pnpm dev:web
 ```
 
-Visit http://localhost:3000
+</details>
+
+---
 
 ## Development Commands
 
 ```bash
-# Start all services
-pnpm dev
-
-# Start frontend only
-pnpm dev:web
-
-# Build all packages
-pnpm build
-
-# Run linting
-pnpm lint
-
-# Type checking
-pnpm typecheck
-
-# Database migrations
-pnpm db:migrate              # Run migrations
-pnpm db:migrate:generate     # Generate new migration
-pnpm db:migrate:revert       # Revert last migration
+pnpm dev:web              # Start frontend
+pnpm build                # Build all packages
+pnpm db:migrate           # Run migrations
+pnpm lint                 # Run linting
+pnpm typecheck            # Type checking
 ```
 
 ## Project Structure
 
 ```
 callmebackwhen/
-├── apps/
-│   └── web/                  # Next.js frontend
+├── apps/web/             # Next.js frontend
 ├── packages/
-│   ├── api/                  # Lambda handlers
-│   ├── db/                   # TypeORM entities & migrations
-│   └── shared/               # Shared types & utilities
-├── infra/                    # AWS CDK infrastructure
-├── docker-compose.yml        # PostgreSQL
-└── CLAUDE.md                 # Detailed dev guide
+│   ├── api/              # Lambda handlers
+│   ├── db/               # TypeORM entities & migrations
+│   └── shared/           # Shared types & utilities
+├── infra/                # AWS CDK infrastructure
+└── setup.sh              # One-command setup
 ```
 
 ## API Endpoints (Phase 1)
@@ -120,14 +123,6 @@ callmebackwhen/
 | POST | `/auth/verify-otp` | Verify OTP, get JWT |
 | POST | `/auth/logout` | Logout |
 | GET | `/users/me` | Get current user (requires auth) |
-
-## Tech Stack
-
-- **Frontend**: Next.js 14, React, Tailwind CSS, React Query
-- **Backend**: Node.js, TypeScript, AWS Lambda, Lambda Powertools
-- **Database**: PostgreSQL, TypeORM
-- **Infrastructure**: AWS CDK, LocalStack (local dev)
-- **SMS**: Twilio (optional for local dev)
 
 ## Troubleshooting
 
@@ -144,11 +139,11 @@ docker compose logs postgres   # View logs
 ```
 
 ### OTP not sending
-Without Twilio configured, OTP codes are logged to the Lambda console. Check LocalStack logs:
+Without Twilio configured, OTP codes are logged to the Lambda console:
 ```bash
 localstack logs
 ```
 
 ## Documentation
 
-See [CLAUDE.md](./CLAUDE.md) for detailed development instructions and architecture decisions.
+See [CLAUDE.md](./CLAUDE.md) for detailed development instructions.
