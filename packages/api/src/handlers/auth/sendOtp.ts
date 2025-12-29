@@ -1,6 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { sendOtpSchema, OTP_CONFIG } from '@callmebackwhen/shared';
 import { getDataSource, OtpCode } from '@callmebackwhen/db';
+import { MoreThanOrEqual } from 'typeorm';
 import { withErrorHandling } from '../../middleware/withErrorHandling.js';
 import { success, corsPreflightResponse } from '../../lib/response.js';
 import { generateOtpCode, getOtpExpiryDate } from '../../lib/otp.js';
@@ -29,7 +30,7 @@ async function handler(
   const recentOtps = await otpRepo.count({
     where: {
       phoneNumber,
-      createdAt: { $gte: oneHourAgo } as unknown as Date,
+      createdAt: MoreThanOrEqual(oneHourAgo),
     },
   });
 
