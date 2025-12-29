@@ -1,11 +1,11 @@
 import * as cdk from 'aws-cdk-lib';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apigatewayIntegrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -19,55 +19,73 @@ export class ApiStack extends cdk.Stack {
 
     const isLocal = props.environment === 'local';
 
-    // Common Lambda configuration
+    // Common Lambda environment
     const lambdaEnvironment = {
       NODE_OPTIONS: '--enable-source-maps',
       LOG_LEVEL: isLocal ? 'DEBUG' : 'INFO',
-      DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@host.docker.internal:5433/callmebackwhen',
+      DATABASE_URL:
+        process.env.DATABASE_URL ??
+        'postgresql://postgres:postgres@host.docker.internal:5433/callmebackwhen',
       JWT_SECRET: process.env.JWT_SECRET ?? 'dev-secret-change-in-production',
       TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID ?? '',
       TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN ?? '',
       TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER ?? '',
     };
 
-    const lambdaDefaults = {
-      runtime: lambda.Runtime.NODEJS_20_X,
+    // Path to API source files
+    const apiSrcPath = path.join(__dirname, '../../packages/api/src');
+
+    // Common bundling options
+    const bundlingOptions = {
+      minify: !isLocal,
+      sourceMap: true,
+      externalModules: [] as string[], // Bundle everything
+    };
+
+    // Auth Lambda functions
+    const sendOtpFn = new NodejsFunction(this, 'SendOtpFunction', {
+      functionName: `${id}-send-otp`,
+      runtime: Runtime.NODEJS_20_X,
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       environment: lambdaEnvironment,
-    };
-
-    // Path to compiled API handlers
-    const apiCodePath = path.join(__dirname, '../../packages/api/dist');
-
-    // Auth Lambda functions
-    const sendOtpFn = new lambda.Function(this, 'SendOtpFunction', {
-      ...lambdaDefaults,
-      functionName: `${id}-send-otp`,
-      code: lambda.Code.fromAsset(apiCodePath),
-      handler: 'handlers/auth/sendOtp.main',
+      entry: path.join(apiSrcPath, 'handlers/auth/sendOtp.ts'),
+      handler: 'main',
+      bundling: bundlingOptions,
     });
 
-    const verifyOtpFn = new lambda.Function(this, 'VerifyOtpFunction', {
-      ...lambdaDefaults,
+    const verifyOtpFn = new NodejsFunction(this, 'VerifyOtpFunction', {
       functionName: `${id}-verify-otp`,
-      code: lambda.Code.fromAsset(apiCodePath),
-      handler: 'handlers/auth/verifyOtp.main',
+      runtime: Runtime.NODEJS_20_X,
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+      environment: lambdaEnvironment,
+      entry: path.join(apiSrcPath, 'handlers/auth/verifyOtp.ts'),
+      handler: 'main',
+      bundling: bundlingOptions,
     });
 
-    const logoutFn = new lambda.Function(this, 'LogoutFunction', {
-      ...lambdaDefaults,
+    const logoutFn = new NodejsFunction(this, 'LogoutFunction', {
       functionName: `${id}-logout`,
-      code: lambda.Code.fromAsset(apiCodePath),
-      handler: 'handlers/auth/logout.main',
+      runtime: Runtime.NODEJS_20_X,
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+      environment: lambdaEnvironment,
+      entry: path.join(apiSrcPath, 'handlers/auth/logout.ts'),
+      handler: 'main',
+      bundling: bundlingOptions,
     });
 
     // User Lambda functions
-    const getMeFn = new lambda.Function(this, 'GetMeFunction', {
-      ...lambdaDefaults,
+    const getMeFn = new NodejsFunction(this, 'GetMeFunction', {
       functionName: `${id}-get-me`,
-      code: lambda.Code.fromAsset(apiCodePath),
-      handler: 'handlers/users/getMe.main',
+      runtime: Runtime.NODEJS_20_X,
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+      environment: lambdaEnvironment,
+      entry: path.join(apiSrcPath, 'handlers/users/getMe.ts'),
+      handler: 'main',
+      bundling: bundlingOptions,
     });
 
     // HTTP API Gateway
