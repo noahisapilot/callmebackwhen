@@ -62,19 +62,24 @@ fi
 echo -e "${YELLOW}🚀 Deploying to LocalStack...${NC}"
 cd infra
 cdklocal bootstrap
-cdklocal deploy --all --require-approval never
+cdklocal deploy --all --require-approval never --outputs-file cdk-outputs.json
 cd ..
 
-# Get the API URL
-API_URL=$(cd infra && cdklocal outputs --all 2>/dev/null | grep -o 'http://[^"]*' | head -1 || echo "")
+# Get the API URL from CDK outputs
+if [ -f infra/cdk-outputs.json ]; then
+    API_URL=$(grep -o '"ApiUrl": *"[^"]*"' infra/cdk-outputs.json | head -1 | sed 's/"ApiUrl": *"\(.*\)"/\1/')
 
-if [ -n "$API_URL" ]; then
-    echo -e "${GREEN}API deployed at: ${API_URL}${NC}"
+    if [ -n "$API_URL" ]; then
+        echo -e "${GREEN}API deployed at: ${API_URL}${NC}"
 
-    # Update .env.local for frontend
-    mkdir -p apps/web
-    echo "NEXT_PUBLIC_API_URL=${API_URL}" > apps/web/.env.local
-    echo -e "${GREEN}Updated apps/web/.env.local with API URL${NC}"
+        # Update .env.local for frontend
+        echo "NEXT_PUBLIC_API_URL=${API_URL}" > apps/web/.env.local
+        echo -e "${GREEN}Updated apps/web/.env.local with API URL${NC}"
+    else
+        echo -e "${YELLOW}Warning: Could not extract API URL from CDK outputs${NC}"
+    fi
+else
+    echo -e "${YELLOW}Warning: CDK outputs file not found${NC}"
 fi
 
 echo ""
