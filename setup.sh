@@ -49,9 +49,10 @@ echo -e "${YELLOW}🗃️  Running database migrations...${NC}"
 pnpm db:migrate
 
 # 6. Start LocalStack if not running
+export MAIN_CONTAINER_NAME=callmebackwhen
 if ! localstack status | grep -q "running"; then
     echo -e "${YELLOW}☁️  Starting LocalStack...${NC}"
-    localstack start -d
+    MAIN_CONTAINER_NAME=callmebackwhen localstack start -d
     sleep 5
 else
     echo -e "${GREEN}LocalStack is already running${NC}"
