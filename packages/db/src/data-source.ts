@@ -1,8 +1,21 @@
 import { config } from 'dotenv';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { existsSync } from 'fs';
 
-// Load .env from monorepo root
-config({ path: resolve(__dirname, '../../../.env') });
+// Find monorepo root by looking for pnpm-workspace.yaml
+function findMonorepoRoot(startDir: string): string {
+  let dir = startDir;
+  while (dir !== '/') {
+    if (existsSync(resolve(dir, 'pnpm-workspace.yaml'))) {
+      return dir;
+    }
+    dir = dirname(dir);
+  }
+  return startDir;
+}
+
+const root = findMonorepoRoot(__dirname);
+config({ path: resolve(root, '.env') });
 
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
