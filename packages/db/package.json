@@ -25,6 +25,7 @@
     "migrate:revert": "typeorm migration:revert -d ./dist/data-source.js"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "pg": "^8.11.3",
     "reflect-metadata": "^0.2.1",
     "typeorm": "^0.3.19"
