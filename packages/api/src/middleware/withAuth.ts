@@ -20,7 +20,22 @@ type Handler = (
 
 export function withAuth(handler: AuthenticatedHandler): Handler {
   return async (event, context) => {
-    const token = extractTokenFromHeader(event.headers.Authorization || event.headers.authorization);
+    // Log all request info for debugging
+    logger.info('Request received', {
+      method: event.httpMethod,
+      path: event.path,
+      headerKeys: Object.keys(event.headers),
+    });
+
+    const authHeader = event.headers.Authorization || event.headers.authorization;
+    logger.info('Auth header received', {
+      hasHeader: !!authHeader,
+      headerPreview: authHeader ? `${authHeader.substring(0, 40)}...` : 'none',
+      authorizationCased: !!event.headers.Authorization,
+      authorizationLower: !!event.headers.authorization,
+    });
+
+    const token = extractTokenFromHeader(authHeader);
 
     if (!token) {
       throw new UnauthorizedError('Missing authorization token');
@@ -32,7 +47,11 @@ export function withAuth(handler: AuthenticatedHandler): Handler {
       authenticatedEvent.auth = payload;
       logger.appendKeys({ userId: payload.userId });
       return await handler(authenticatedEvent, context);
-    } catch {
+    } catch (err) {
+      logger.error('Token verification failed', {
+        error: err instanceof Error ? err.message : String(err),
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none'
+      });
       throw new UnauthorizedError('Invalid or expired token');
     }
   };
