@@ -10,7 +10,7 @@ import { api } from '@/lib/api';
 import type { CallPublic } from '@callmebackwhen/shared';
 import Link from 'next/link';
 
-export default function CallHistoryPage() {
+export default function CallHistoryClient() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -164,7 +164,7 @@ function CallRow({ call }: { call: CallPublic }) {
           </p>
           {call.outcomeSummary && (
             <p className="text-sm text-gray-600 mt-2 italic">
-              "{call.outcomeSummary}"
+              &quot;{call.outcomeSummary}&quot;
             </p>
           )}
         </div>

@@ -41,7 +41,7 @@ function formatEventType(eventType: string): string {
   return labels[eventType] ?? eventType;
 }
 
-export default function CallDetailPage() {
+export default function CallDetailClient() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
@@ -81,7 +81,7 @@ export default function CallDetailPage() {
               Call not found
             </h2>
             <p className="text-gray-500 mb-4">
-              This call doesn't exist or you don't have access to it.
+              This call doesn&apos;t exist or you don&apos;t have access to it.
             </p>
             <Link href="/calls">
               <Button>Back to Call History</Button>
