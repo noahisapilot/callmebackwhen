@@ -20,20 +20,7 @@ type Handler = (
 
 export function withAuth(handler: AuthenticatedHandler): Handler {
   return async (event, context) => {
-    // Log all request info for debugging
-    logger.info('Request received', {
-      method: event.httpMethod,
-      path: event.path,
-      headerKeys: Object.keys(event.headers),
-    });
-
     const authHeader = event.headers.Authorization || event.headers.authorization;
-    logger.info('Auth header received', {
-      hasHeader: !!authHeader,
-      headerPreview: authHeader ? `${authHeader.substring(0, 40)}...` : 'none',
-      authorizationCased: !!event.headers.Authorization,
-      authorizationLower: !!event.headers.authorization,
-    });
 
     const token = extractTokenFromHeader(authHeader);
 
@@ -41,12 +28,10 @@ export function withAuth(handler: AuthenticatedHandler): Handler {
       throw new UnauthorizedError('Missing authorization token');
     }
 
+    // Only wrap token verification in try-catch, not the handler
+    let payload: AuthTokenPayload;
     try {
-      const payload = verifyToken(token);
-      const authenticatedEvent = event as AuthenticatedEvent;
-      authenticatedEvent.auth = payload;
-      logger.appendKeys({ userId: payload.userId });
-      return await handler(authenticatedEvent, context);
+      payload = verifyToken(token);
     } catch (err) {
       logger.error('Token verification failed', {
         error: err instanceof Error ? err.message : String(err),
@@ -54,5 +39,12 @@ export function withAuth(handler: AuthenticatedHandler): Handler {
       });
       throw new UnauthorizedError('Invalid or expired token');
     }
+
+    const authenticatedEvent = event as AuthenticatedEvent;
+    authenticatedEvent.auth = payload;
+    logger.appendKeys({ userId: payload.userId });
+
+    // Let handler errors propagate to withErrorHandling
+    return await handler(authenticatedEvent, context);
   };
 }
