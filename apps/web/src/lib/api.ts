@@ -15,11 +15,15 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4566';
 
-class ApiClient {
-  private token: string | null = null;
+const TOKEN_KEY = 'auth_token';
 
-  setToken(token: string | null) {
-    this.token = token;
+class ApiClient {
+  private getToken(): string | null {
+    // Read directly from localStorage to survive hot module reloads
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+    return null;
   }
 
   private async request<T>(
@@ -31,8 +35,9 @@ class ApiClient {
       ...options.headers,
     };
 
-    if (this.token) {
-      (headers as Record<string, string>).Authorization = `Bearer ${this.token}`;
+    const token = this.getToken();
+    if (token) {
+      (headers as Record<string, string>).Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -106,10 +111,6 @@ class ApiClient {
   getCallStreamUrl(callId: string): string {
     const streamUrl = process.env.NEXT_PUBLIC_CALL_STREAM_URL ?? '';
     return `${streamUrl}?callId=${callId}`;
-  }
-
-  getToken(): string | null {
-    return this.token;
   }
 }
 

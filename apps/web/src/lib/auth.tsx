@@ -10,7 +10,6 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserPublic } from '@callmebackwhen/shared';
-import { api } from './api';
 
 interface AuthContextType {
   user: UserPublic | null;
@@ -42,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const parsedUser = JSON.parse(storedUser) as UserPublic;
         setToken(storedToken);
         setUser(parsedUser);
-        api.setToken(storedToken);
       } catch {
         // Invalid stored data, clear it
         localStorage.removeItem(TOKEN_KEY);
@@ -56,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback((newToken: string, newUser: UserPublic) => {
     setToken(newToken);
     setUser(newUser);
-    api.setToken(newToken);
     localStorage.setItem(TOKEN_KEY, newToken);
     localStorage.setItem(USER_KEY, JSON.stringify(newUser));
   }, []);
@@ -64,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-    api.setToken(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     router.push('/');

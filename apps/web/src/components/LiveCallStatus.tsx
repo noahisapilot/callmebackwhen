@@ -132,7 +132,7 @@ export function LiveCallStatus({ call, onCallEnded }: LiveCallStatusProps) {
   // SSE connection for real-time updates
   useEffect(() => {
     const streamUrl = api.getCallStreamUrl(call.id);
-    const token = api.getToken();
+    const token = localStorage.getItem('auth_token');
 
     if (!streamUrl || !token) {
       return;
