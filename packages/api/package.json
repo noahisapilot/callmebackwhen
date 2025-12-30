@@ -16,16 +16,19 @@
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.0.0",
     "@aws-lambda-powertools/metrics": "^2.0.0",
+    "@aws-lambda-powertools/parameters": "^2.30.0",
     "@aws-lambda-powertools/tracer": "^2.0.0",
     "@callmebackwhen/db": "workspace:*",
     "@callmebackwhen/shared": "workspace:*",
+    "@vapi-ai/server-sdk": "^0.11.0",
     "jsonwebtoken": "^9.0.2",
+    "reflect-metadata": "^0.2.1",
     "twilio": "^4.20.0",
     "typeorm": "^0.3.19",
-    "zod": "^3.22.4",
-    "reflect-metadata": "^0.2.1"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.958.0",
     "@types/aws-lambda": "^8.10.131",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.0",

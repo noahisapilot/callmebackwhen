@@ -10,15 +10,19 @@ import {
 import { Call } from './Call.js';
 
 export type CallEventType =
+  | 'call_started'
   | 'ivr_detected'
   | 'hold_started'
+  | 'hold_ended'
   | 'callback_offered'
+  | 'callback_accepted'
   | 'rep_available'
   | 'transfer_initiated'
   | 'transfer_completed'
   | 'info_requested'
   | 'info_received'
   | 'speech_update'
+  | 'resolved'
   | 'error';
 
 @Entity('call_events')

@@ -177,6 +177,13 @@ The AI system handles calls with three possible outcomes:
 
 ### Phase 3: Payments & Intelligence
 - Payment integration (Stripe, pre-funded balance)
+- **Billing integration for calls (deferred from Phase 2):**
+  - Check user balance before initiating calls
+  - Real-time balance deduction during calls ($0.05/min)
+  - Block call initiation if insufficient balance
+  - Finalize call cost on call-ended webhook
+  - Create transaction records for call charges
+  - Handle edge cases: call failures, refunds for dropped calls
 - IVR navigation
 - Callback detection
 - Autonomous resolution attempts

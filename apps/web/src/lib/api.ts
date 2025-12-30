@@ -4,6 +4,12 @@ import type {
   VerifyOtpRequest,
   VerifyOtpResponse,
   GetMeResponse,
+  CreateCallRequest,
+  CreateCallResponse,
+  ListCallsResponse,
+  GetCallResponse,
+  GetActiveCallResponse,
+  CancelCallResponse,
   ApiError,
 } from '@callmebackwhen/shared';
 
@@ -68,6 +74,42 @@ class ApiClient {
   // User endpoints
   async getMe(): Promise<GetMeResponse> {
     return this.request('/users/me');
+  }
+
+  // Call endpoints
+  async createCall(data: CreateCallRequest): Promise<CreateCallResponse> {
+    return this.request('/calls', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listCalls(page = 1, limit = 20): Promise<ListCallsResponse> {
+    return this.request(`/calls?page=${page}&limit=${limit}`);
+  }
+
+  async getCall(id: string): Promise<GetCallResponse> {
+    return this.request(`/calls/${id}`);
+  }
+
+  async getActiveCall(): Promise<GetActiveCallResponse> {
+    return this.request('/calls/active');
+  }
+
+  async cancelCall(id: string): Promise<CancelCallResponse> {
+    return this.request(`/calls/${id}/cancel`, {
+      method: 'POST',
+    });
+  }
+
+  // SSE stream URL (uses Lambda Function URL)
+  getCallStreamUrl(callId: string): string {
+    const streamUrl = process.env.NEXT_PUBLIC_CALL_STREAM_URL ?? '';
+    return `${streamUrl}?callId=${callId}`;
+  }
+
+  getToken(): string | null {
+    return this.token;
   }
 }
 

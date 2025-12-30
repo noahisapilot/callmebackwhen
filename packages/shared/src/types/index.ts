@@ -68,7 +68,7 @@ export interface ApiError {
   };
 }
 
-// Call types (Phase 2 - included for type completeness)
+// Call types
 export type CallStatus =
   | 'pending'
   | 'dialing'
@@ -106,4 +106,123 @@ export interface Call {
   callbackRequested: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Call public type (for API responses)
+export interface CallPublic {
+  id: string;
+  targetPhoneNumber: string;
+  userPrompt: string;
+  status: CallStatus;
+  startedAt?: string;
+  connectedAt?: string;
+  endedAt?: string;
+  durationSeconds?: number;
+  holdDurationSeconds?: number;
+  costCents?: number;
+  outcome?: CallOutcome;
+  outcomeSummary?: string;
+  expectedWaitMinutes?: number;
+  callbackRequested: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Call event types
+export type CallEventType =
+  | 'call_started'
+  | 'ivr_detected'
+  | 'hold_started'
+  | 'hold_ended'
+  | 'callback_offered'
+  | 'callback_accepted'
+  | 'rep_available'
+  | 'transfer_initiated'
+  | 'transfer_completed'
+  | 'info_requested'
+  | 'info_received'
+  | 'speech_update'
+  | 'resolved'
+  | 'error';
+
+export interface CallEvent {
+  id: string;
+  callId: string;
+  eventType: CallEventType;
+  eventData?: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface CallEventPublic {
+  id: string;
+  eventType: CallEventType;
+  eventData?: Record<string, unknown>;
+  createdAt: string;
+}
+
+// Call API Request/Response types
+export interface CreateCallRequest {
+  targetPhoneNumber: string;
+  prompt: string;
+}
+
+export interface CreateCallResponse {
+  call: CallPublic;
+}
+
+export interface ListCallsResponse {
+  calls: CallPublic[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface GetCallResponse {
+  call: CallPublic;
+  events: CallEventPublic[];
+}
+
+export interface GetActiveCallResponse {
+  call: CallPublic | null;
+  events: CallEventPublic[];
+}
+
+export interface CancelCallResponse {
+  success: boolean;
+}
+
+// SSE event types for call streaming
+export type CallStreamEventType =
+  | 'status_update'
+  | 'event'
+  | 'transcript'
+  | 'error'
+  | 'heartbeat';
+
+export interface CallStreamEvent {
+  type: CallStreamEventType;
+  data: {
+    callId: string;
+    status?: CallStatus;
+    event?: CallEventPublic;
+    transcript?: string;
+    message?: string;
+    timestamp: string;
+  };
+}
+
+// Vapi function call types (for AI actions)
+export type VapiFunctionName =
+  | 'REQUEST_INFO'
+  | 'TRANSFER'
+  | 'REPORT_CALLBACK'
+  | 'REPORT_WAIT_TIME'
+  | 'MARK_RESOLVED';
+
+export interface VapiFunctionCall {
+  name: VapiFunctionName;
+  arguments: Record<string, unknown>;
 }

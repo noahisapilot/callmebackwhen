@@ -208,6 +208,56 @@ const call = await vapi.calls.create({
 - `function-call`: Handle custom functions (REQUEST_INFO, TRANSFER, etc.)
 - `call-ended`: Finalize call, calculate cost, store recording URL
 
+### Local Development with Vapi Webhooks
+
+For local development, Vapi needs a publicly accessible URL to send webhooks. Use **cloudflared** to create a tunnel:
+
+```bash
+# 1. Start LocalStack and your API
+docker-compose up -d
+cdklocal deploy --all
+
+# 2. Get the LocalStack API Gateway URL (from CDK output)
+# Example: http://localhost:4566/restapis/abc123/local/_user_request_
+
+# 3. Start cloudflared tunnel to expose your webhook endpoint
+cloudflared tunnel --url http://localhost:4566
+
+# This will output a public URL like:
+# https://random-subdomain.trycloudflare.com
+
+# 4. Set the webhook URL in your environment
+export VAPI_WEBHOOK_URL=https://random-subdomain.trycloudflare.com/webhooks/vapi
+
+# 5. Redeploy to update Lambda environment
+cdklocal deploy --all
+```
+
+**Important**: The cloudflared URL changes each time you restart the tunnel. Update `VAPI_WEBHOOK_URL` accordingly.
+
+### Setting Up Vapi
+
+1. Sign up at [dashboard.vapi.ai](https://dashboard.vapi.ai)
+2. Get your API key from Settings > API Keys
+3. Import or create a phone number (Twilio, Vonage, or use a free Vapi number)
+4. Note the Phone Number ID from the dashboard
+5. Set up secrets in AWS:
+   ```bash
+   # For LocalStack
+   awslocal secretsmanager put-secret-value \
+     --secret-id "callmebackwhen-api-local/vapi-api-key" \
+     --secret-string "your-vapi-api-key"
+
+   awslocal secretsmanager put-secret-value \
+     --secret-id "callmebackwhen-api-local/vapi-webhook-secret" \
+     --secret-string "your-webhook-secret"
+   ```
+6. Set environment variables:
+   ```bash
+   export VAPI_PHONE_NUMBER_ID=your-phone-number-id
+   export VAPI_WEBHOOK_URL=https://your-cloudflared-url.trycloudflare.com/webhooks/vapi
+   ```
+
 ## Database Conventions (TypeORM)
 
 ### Naming
@@ -340,8 +390,9 @@ export const handler = withErrorHandling(async (event) => {
 
 **Vapi webhook not receiving events**
 - Check VAPI_WEBHOOK_SECRET matches dashboard
-- Verify serverUrl is publicly accessible (use ngrok for local dev)
-- Check Lambda logs for errors
+- Verify serverUrl is publicly accessible (use `cloudflared tunnel --url http://localhost:4566` for local dev)
+- Ensure VAPI_WEBHOOK_URL environment variable is set correctly
+- Check Lambda logs for errors: `awslocal logs tail /aws/lambda/callmebackwhen-api-local-vapi-webhook`
 
 **SMS not sending**
 - Verify Twilio credentials
