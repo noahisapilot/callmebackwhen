@@ -115,7 +115,9 @@ callmebackwhen/
 └── setup.sh              # One-command setup
 ```
 
-## API Endpoints (Phase 1)
+## API Endpoints
+
+### Authentication (Phase 1)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -123,6 +125,52 @@ callmebackwhen/
 | POST | `/auth/verify-otp` | Verify OTP, get JWT |
 | POST | `/auth/logout` | Logout |
 | GET | `/users/me` | Get current user (requires auth) |
+
+### Calls (Phase 2)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/calls` | Initiate a new call |
+| GET | `/calls` | List call history (paginated) |
+| GET | `/calls/active` | Get current active call |
+| GET | `/calls/:id` | Get call details with events |
+| POST | `/calls/:id/cancel` | Cancel an active call |
+| GET | `/calls/:id/stream` | SSE stream for real-time updates |
+
+### Webhooks
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/webhooks/vapi` | Vapi webhook for call events |
+
+## Vapi Setup (for Call Functionality)
+
+1. Sign up at [dashboard.vapi.ai](https://dashboard.vapi.ai)
+2. Get your API key from Settings > API Keys
+3. Import or create a phone number (Twilio, Vonage, or Vapi number)
+4. Set up secrets in LocalStack:
+   ```bash
+   awslocal secretsmanager put-secret-value \
+     --secret-id "callmebackwhen-api-local/vapi-api-key" \
+     --secret-string "your-vapi-api-key"
+   ```
+5. Set environment variables:
+   ```bash
+   export VAPI_PHONE_NUMBER_ID=your-phone-number-id
+   export VAPI_WEBHOOK_URL=https://your-tunnel-url/webhooks/vapi
+   ```
+
+### Local Webhook Testing
+
+Vapi needs a public URL for webhooks. Use cloudflared:
+
+```bash
+# Start a tunnel to LocalStack
+cloudflared tunnel --url http://localhost:4566
+
+# Use the generated URL (e.g., https://random.trycloudflare.com)
+# Set VAPI_WEBHOOK_URL to this URL + /webhooks/vapi
+```
 
 ## Troubleshooting
 

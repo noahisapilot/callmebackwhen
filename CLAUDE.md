@@ -184,29 +184,44 @@ export const handler = async (event: APIGatewayEvent) => {
 
 ### Creating Calls
 ```typescript
-import Vapi from '@vapi-ai/server-sdk';
+import { VapiClient } from '@vapi-ai/server-sdk';
 
-const vapi = new Vapi({ apiKey: process.env.VAPI_API_KEY });
+const vapi = new VapiClient({ token: apiKey });
 
 const call = await vapi.calls.create({
-  phoneNumber: targetPhoneNumber,
+  phoneNumberId: 'your-vapi-phone-number-id',
+  customer: {
+    number: targetPhoneNumber,
+  },
   assistant: {
     firstMessage: "Hello, I'm calling on behalf of...",
     model: {
-      provider: "openai",
-      model: "gpt-4",
-      systemPrompt: buildSystemPrompt(userPrompt),
+      provider: 'openai',
+      model: 'gpt-4o',
+      messages: [{ role: 'system', content: systemPrompt }],
+      tools: assistantTools, // CreateFunctionToolDto[]
     },
+    voice: { provider: 'openai', voiceId: 'alloy' },
+    server: { url: webhookUrl },
   },
-  serverUrl: `${API_URL}/webhooks/vapi`,
 });
 ```
 
-### Webhook Events to Handle
-- `call-started`: Update call status to "dialing"
+### AI Function Tools
+The assistant uses these function tools to communicate with the user:
+- `REQUEST_INFO`: Request information from customer via SMS
+- `TRANSFER`: Initiate warm transfer to customer
+- `REPORT_CALLBACK`: Report accepted callback offer
+- `REPORT_WAIT_TIME`: Report IVR-announced wait time
+- `MARK_RESOLVED`: Mark issue as resolved
+
+### Webhook Events Handled
+- `call-started`: Update call status to "in_progress"
+- `status-update`: Track call status changes
 - `speech-update`: Log transcript in real-time
-- `function-call`: Handle custom functions (REQUEST_INFO, TRANSFER, etc.)
-- `call-ended`: Finalize call, calculate cost, store recording URL
+- `function-call`: Handle AI function calls (REQUEST_INFO, TRANSFER, etc.)
+- `call-ended`: Finalize call, calculate duration, store recording URL
+- `error`: Log and handle call errors
 
 ### Local Development with Vapi Webhooks
 

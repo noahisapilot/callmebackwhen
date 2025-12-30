@@ -163,17 +163,20 @@ The AI system handles calls with three possible outcomes:
 
 ## Timeline
 
-### Phase 1: Foundation (Current)
+### Phase 1: Foundation ✅
 - PRD and technical documentation
 - Project setup and infrastructure (monorepo, TypeORM, LocalStack)
 - Core authentication flow (phone OTP → JWT)
 - Dashboard stub (no payment required yet)
 
-### Phase 2: Core Functionality
-- Vapi integration
-- Basic call flow (dial, wait, transfer)
-- Live call dashboard with real-time updates
-- Call history page
+### Phase 2: Core Functionality ✅
+- Vapi integration with transient assistants
+- Call initiation API (create, list, get, cancel)
+- AI function tools (REQUEST_INFO, TRANSFER, REPORT_CALLBACK, REPORT_WAIT_TIME, MARK_RESOLVED)
+- Live call dashboard with SSE real-time updates
+- Call history and detail pages
+- Webhook handling for call events
+- AWS Secrets Manager for Vapi credentials
 
 ### Phase 3: Payments & Intelligence
 - Payment integration (Stripe, pre-funded balance)
