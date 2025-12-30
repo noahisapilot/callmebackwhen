@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { PhoneInput } from '@/components/PhoneInput';
@@ -13,13 +13,14 @@ export default function LandingPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   // Redirect to dashboard if already authenticated
-  if (isAuthenticated) {
-    router.push('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   const sendOtpMutation = useMutation({
     mutationFn: () => api.sendOtp({ phoneNumber }),
@@ -44,6 +45,15 @@ export default function LandingPage() {
 
     sendOtpMutation.mutate();
   };
+
+  // Show loading while checking auth
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
